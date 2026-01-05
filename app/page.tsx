@@ -8,8 +8,9 @@ import { LotList } from "@/app/components/features/LotList";
 import { LotDetail } from "@/app/components/features/LotDetail";
 import { CreateLotForm } from "@/app/components/features/CreateLotForm";
 import { PricingSection } from "@/app/components/features/PricingSection";
+import { PaymentsPage } from "@/app/components/features/PaymentsPage";
 
-type View = "list" | "detail" | "create" | "pricing";
+type View = "list" | "detail" | "create" | "pricing" | "payments";
 
 export default function Home() {
   const { account, lots, loading, createLot, validateStep } = useSupplyChain();
@@ -28,7 +29,6 @@ export default function Home() {
       if (!isNaN(lotId)) {
         setSelectedLotId(lotId);
         setView("detail");
-        // Clean URL
         window.history.replaceState({}, "", window.location.pathname);
       }
     }
@@ -65,6 +65,7 @@ export default function Home() {
       <Navbar
         onHomeClick={handleBack}
         onPricingClick={() => setView("pricing")}
+        onPaymentsClick={() => setView("payments")}
       />
 
       <main className="max-w-5xl mx-auto px-6 py-8">
@@ -108,6 +109,10 @@ export default function Home() {
 
             {view === "pricing" && (
               <PricingSection onBack={handleBack} />
+            )}
+
+            {view === "payments" && (
+              <PaymentsPage onBack={handleBack} />
             )}
           </>
         )}

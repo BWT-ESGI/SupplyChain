@@ -55,15 +55,15 @@ export function LotList({ lots, account, onSelect, onCreate, loading }: LotListP
       {/* Header compact */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-stone-900">Lots</h1>
-          <p className="text-sm text-stone-500 mt-0.5">{stats.total} lot{stats.total > 1 ? 's' : ''} enregistré{stats.total > 1 ? 's' : ''}</p>
+          <h1 className="text-2xl font-semibold text-stone-900">Marketplace</h1>
+          <p className="text-sm text-stone-500 mt-0.5">{stats.total} lot{stats.total > 1 ? 's' : ''} disponible{stats.total > 1 ? 's' : ''}</p>
         </div>
         <button
           onClick={onCreate}
           className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors"
         >
           <span>+</span>
-          Nouveau lot
+          Vendre un lot
         </button>
       </div>
 
@@ -72,7 +72,7 @@ export function LotList({ lots, account, onSelect, onCreate, loading }: LotListP
         <div className="flex gap-1 p-1 bg-stone-100 rounded-lg">
           {[
             { key: "all" as Filter, label: "Tous", count: stats.total },
-            { key: "pending" as Filter, label: "En cours", count: stats.pending },
+            { key: "pending" as Filter, label: "Actifs", count: stats.pending },
             { key: "completed" as Filter, label: "Terminés", count: stats.completed },
             ...(account ? [{ key: "mine" as Filter, label: "Mes lots", count: stats.mine }] : [])
           ].map(f => (
@@ -110,76 +110,94 @@ export function LotList({ lots, account, onSelect, onCreate, loading }: LotListP
       ) : filteredLots.length === 0 ? (
         <div className="py-12 text-center">
           <div className="text-stone-400 text-sm">
-            {lots.length === 0 ? "Aucun lot créé" : "Aucun résultat"}
+            {lots.length === 0 ? "Aucun lot en vente" : "Aucun résultat"}
           </div>
           {lots.length === 0 && (
             <button onClick={onCreate} className="mt-3 text-teal-600 text-sm font-medium hover:underline">
-              Créer votre premier lot
+              Mettre en vente votre premier lot
             </button>
           )}
         </div>
       ) : (
-        <div className="bg-white border border-stone-200 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-stone-100 bg-stone-50/50">
-                <th className="text-left px-4 py-3 font-medium text-stone-500">ID</th>
-                <th className="text-left px-4 py-3 font-medium text-stone-500">Lot</th>
-                <th className="text-left px-4 py-3 font-medium text-stone-500 hidden md:table-cell">Créateur</th>
-                <th className="text-left px-4 py-3 font-medium text-stone-500 hidden sm:table-cell">Date</th>
-                <th className="text-left px-4 py-3 font-medium text-stone-500">Avancement</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredLots.map(lot => {
-                const progress = getProgress(lot);
-                const done = isLotCompleted(lot);
-                
-                return (
-                  <tr 
-                    key={lot.id} 
-                    onClick={() => onSelect(lot)}
-                    className="border-b border-stone-50 last:border-0 hover:bg-stone-50 cursor-pointer transition-colors"
-                  >
-                    <td className="px-4 py-3">
-                      <span className="font-mono text-stone-400">#{lot.id}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-stone-900">{lot.title}</div>
-                      <div className="text-stone-400 text-xs mt-0.5">
-                        {lot.quantity > 0 && <span>{lot.quantity} {lot.unit}</span>}
-                        {lot.origin && <span> · {lot.origin}</span>}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 hidden md:table-cell">
-                      <span className="font-mono text-xs text-stone-400">
-                        {lot.creator.slice(0, 6)}...{lot.creator.slice(-4)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 hidden sm:table-cell text-stone-500">
-                      <FormattedDate timestamp={lot.createdAt} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-20 h-1.5 bg-stone-100 rounded-full overflow-hidden">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredLots.map(lot => {
+            const progress = getProgress(lot);
+            const done = isLotCompleted(lot);
+            
+            return (
+              <div
+                key={lot.id}
+                onClick={() => onSelect(lot)}
+                className="bg-white border border-stone-200 rounded-xl p-5 hover:shadow-lg hover:border-teal-200 cursor-pointer transition-all"
+              >
+                {/* Header */}
+                <div className="flex items-start justify-between mb-3">
+                  <span className="text-xs font-mono text-stone-400 bg-stone-100 px-2 py-0.5 rounded">
+                    #{lot.id}
+                  </span>
+                  {done ? (
+                    <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded">
+                      Terminé
+                    </span>
+                  ) : progress.completed === 0 ? (
+                    <span className="text-xs font-medium text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                      En vente
+                    </span>
+                  ) : (
+                    <span className="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded">
+                      En cours
+                    </span>
+                  )}
+                </div>
+
+                {/* Title */}
+                <h3 className="font-semibold text-stone-900 mb-1 truncate">{lot.title}</h3>
+                <p className="text-sm text-stone-500 line-clamp-2 mb-3">{lot.description}</p>
+
+                {/* Details */}
+                <div className="flex items-center gap-3 text-xs text-stone-400 mb-4">
+                  {lot.quantity > 0 && (
+                    <span>{lot.quantity} {lot.unit}</span>
+                  )}
+                  {lot.origin && (
+                    <span>· {lot.origin}</span>
+                  )}
+                </div>
+
+                {/* Price */}
+                <div className="flex items-end justify-between pt-3 border-t border-stone-100">
+                  <div>
+                    <div className="text-xs text-stone-400">Prix</div>
+                    <div className="text-lg font-bold text-teal-600">{lot.price} ETH</div>
+                  </div>
+                  {!done && progress.completed > 0 && (
+                    <div className="text-right">
+                      <div className="text-xs text-stone-400 mb-1">Progression</div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-12 h-1.5 bg-stone-100 rounded-full overflow-hidden">
                           <div 
-                            className={`h-full rounded-full transition-all ${done ? "bg-green-500" : "bg-teal-500"}`}
+                            className="h-full rounded-full bg-teal-500"
                             style={{ width: `${progress.percent}%` }}
                           />
                         </div>
-                        <span className={`text-xs font-medium ${done ? "text-green-600" : "text-stone-500"}`}>
-                          {progress.completed}/{progress.total}
-                        </span>
+                        <span className="text-xs text-stone-500">{progress.completed}/{progress.total}</span>
                       </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Seller */}
+                <div className="mt-3 pt-3 border-t border-stone-100 flex items-center justify-between text-xs">
+                  <span className="text-stone-400">Vendeur</span>
+                  <span className="font-mono text-stone-500">
+                    {lot.creator.slice(0, 6)}...{lot.creator.slice(-4)}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
-

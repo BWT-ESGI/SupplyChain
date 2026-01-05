@@ -20,6 +20,7 @@ contract SupplyChain {
         uint256 quantity;
         string unit;
         string origin;
+        uint256 price; // Price in wei
         address creator;
         uint256 createdAt;
         bool exists;
@@ -30,7 +31,7 @@ contract SupplyChain {
     
     uint256 public nextLotId;
 
-    event LotCreated(uint256 indexed lotId, string title, address indexed creator);
+    event LotCreated(uint256 indexed lotId, string title, address indexed creator, uint256 price);
     event StepAdded(uint256 indexed lotId, uint256 stepIndex, string description);
     event StepValidated(uint256 indexed lotId, uint256 stepIndex, address validator);
 
@@ -40,6 +41,7 @@ contract SupplyChain {
         uint256 _quantity,
         string memory _unit,
         string memory _origin,
+        uint256 _price,
         string[] memory _stepDescriptions, 
         address[][] memory _stepValidators
     ) public returns (uint256) {
@@ -55,6 +57,7 @@ contract SupplyChain {
             quantity: _quantity,
             unit: _unit,
             origin: _origin,
+            price: _price,
             creator: msg.sender,
             createdAt: block.timestamp,
             exists: true
@@ -72,7 +75,7 @@ contract SupplyChain {
             emit StepAdded(lotId, i, _stepDescriptions[i]);
         }
 
-        emit LotCreated(lotId, _title, msg.sender);
+        emit LotCreated(lotId, _title, msg.sender, _price);
         nextLotId++;
         return lotId;
     }
