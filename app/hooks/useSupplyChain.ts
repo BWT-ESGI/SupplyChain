@@ -2,13 +2,13 @@ import { useState, useEffect, useCallback } from "react";
 import { useAccount, useWriteContract, usePublicClient } from "wagmi";
 import { type Address } from "viem";
 
-const CONTRACT_ADDRESS = "0x286A15f6fd612b8105F867aCB69Fb74Bf34e73A1";
+const CONTRACT_ADDRESS = "0x0C48C28B17577D627771A1750d3254f36B5a81bc";
 
 const CONTRACT_ABI = [
-  { inputs: [{ name: "_title", type: "string" }, { name: "_description", type: "string" }, { name: "_stepDescriptions", type: "string[]" }, { name: "_stepValidators", type: "address[][]" }], name: "createLot", outputs: [{ name: "", type: "uint256" }], stateMutability: "nonpayable", type: "function" },
+  { inputs: [{ name: "_title", type: "string" }, { name: "_description", type: "string" }, { name: "_quantity", type: "uint256" }, { name: "_unit", type: "string" }, { name: "_origin", type: "string" }, { name: "_stepDescriptions", type: "string[]" }, { name: "_stepValidators", type: "address[][]" }], name: "createLot", outputs: [{ name: "", type: "uint256" }], stateMutability: "nonpayable", type: "function" },
   { inputs: [{ name: "_lotId", type: "uint256" }, { name: "_stepIndex", type: "uint256" }], name: "validateStep", outputs: [], stateMutability: "nonpayable", type: "function" },
   { inputs: [], name: "nextLotId", outputs: [{ name: "", type: "uint256" }], stateMutability: "view", type: "function" },
-  { inputs: [{ name: "_lotId", type: "uint256" }], name: "getLot", outputs: [{ components: [{ name: "id", type: "uint256" }, { name: "title", type: "string" }, { name: "description", type: "string" }, { name: "creator", type: "address" }, { name: "createdAt", type: "uint256" }, { name: "exists", type: "bool" }], name: "", type: "tuple" }], stateMutability: "view", type: "function" },
+  { inputs: [{ name: "_lotId", type: "uint256" }], name: "getLot", outputs: [{ components: [{ name: "id", type: "uint256" }, { name: "title", type: "string" }, { name: "description", type: "string" }, { name: "quantity", type: "uint256" }, { name: "unit", type: "string" }, { name: "origin", type: "string" }, { name: "creator", type: "address" }, { name: "createdAt", type: "uint256" }, { name: "exists", type: "bool" }], name: "", type: "tuple" }], stateMutability: "view", type: "function" },
   { inputs: [{ name: "_lotId", type: "uint256" }], name: "getLotStepsCount", outputs: [{ name: "", type: "uint256" }], stateMutability: "view", type: "function" },
   { inputs: [{ name: "_lotId", type: "uint256" }, { name: "_stepIndex", type: "uint256" }], name: "getStep", outputs: [{ name: "description", type: "string" }, { name: "validators", type: "address[]" }, { name: "validatedBy", type: "address" }, { name: "validatedAt", type: "uint256" }, { name: "status", type: "uint8" }], stateMutability: "view", type: "function" }
 ] as const;
@@ -25,9 +25,22 @@ export type Lot = {
   id: number;
   title: string;
   description: string;
+  quantity: number;
+  unit: string;
+  origin: string;
   creator: string;
   createdAt: number;
   steps: Step[];
+};
+
+export type CreateLotParams = {
+  title: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  origin: string;
+  stepDescriptions: string[];
+  stepValidators: string[][];
 };
 
 export function useSupplyChain() {
@@ -50,7 +63,7 @@ export function useSupplyChain() {
 
       const loadedLots: Lot[] = [];
       const count = Number(nextId);
-      const start = Math.max(0, count - 10);
+      const start = Math.max(0, count - 20);
 
       for (let i = count - 1; i >= start; i--) {
         const lotId = BigInt(i);
@@ -59,7 +72,7 @@ export function useSupplyChain() {
           abi: CONTRACT_ABI,
           functionName: "getLot",
           args: [lotId],
-        })) as { id: bigint; title: string; description: string; creator: string; createdAt: bigint; exists: boolean };
+        })) as { id: bigint; title: string; description: string; quantity: bigint; unit: string; origin: string; creator: string; createdAt: bigint; exists: boolean };
 
         if (!lotData.exists) continue;
 
@@ -92,6 +105,9 @@ export function useSupplyChain() {
           id: Number(lotData.id),
           title: lotData.title,
           description: lotData.description,
+          quantity: Number(lotData.quantity),
+          unit: lotData.unit,
+          origin: lotData.origin,
           creator: lotData.creator,
           createdAt: Number(lotData.createdAt),
           steps,
@@ -105,13 +121,21 @@ export function useSupplyChain() {
     }
   }, [publicClient]);
 
-  const createLot = async (title: string, description: string, stepDescs: string[], stepValidators: string[][]) => {
+  const createLot = async (params: CreateLotParams) => {
     if (!address) throw new Error("Not connected");
     const hash = await writeContractAsync({
       address: CONTRACT_ADDRESS,
       abi: CONTRACT_ABI,
       functionName: "createLot",
-      args: [title, description, stepDescs, stepValidators as Address[][]],
+      args: [
+        params.title,
+        params.description,
+        BigInt(params.quantity),
+        params.unit,
+        params.origin,
+        params.stepDescriptions,
+        params.stepValidators as Address[][],
+      ],
     });
     await publicClient?.waitForTransactionReceipt({ hash });
     await fetchLots();

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useConnect } from "wagmi";
-import { useSupplyChain, Lot } from "@/app/hooks/useSupplyChain";
+import { useSupplyChain, Lot, CreateLotParams } from "@/app/hooks/useSupplyChain";
 import { Navbar } from "@/app/components/layout/Navbar";
 import { LotList } from "@/app/components/features/LotList";
 import { LotDetail } from "@/app/components/features/LotDetail";
@@ -18,26 +18,40 @@ export default function Home() {
   const [view, setView] = useState<View>("list");
   const [selectedLotId, setSelectedLotId] = useState<number | null>(null);
 
-  // Récupère le lot sélectionné depuis la liste mise à jour
+  // Handle URL query parameter for shared lot
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const lotIdParam = params.get("lot");
+    if (lotIdParam) {
+      const lotId = parseInt(lotIdParam);
+      if (!isNaN(lotId)) {
+        setSelectedLotId(lotId);
+        setView("detail");
+        // Clean URL
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+    }
+  }, []);
+
   const selectedLot = selectedLotId !== null 
     ? lots.find(l => l.id === selectedLotId) || null 
     : null;
 
-  // Si le lot sélectionné n'existe plus, retourner à la liste
   useEffect(() => {
-    if (view === "detail" && selectedLotId !== null && !selectedLot) {
+    if (view === "detail" && selectedLotId !== null && !selectedLot && lots.length > 0) {
       setView("list");
       setSelectedLotId(null);
     }
-  }, [view, selectedLotId, selectedLot]);
+  }, [view, selectedLotId, selectedLot, lots.length]);
 
   const handleSelectLot = (lot: Lot) => {
     setSelectedLotId(lot.id);
     setView("detail");
   };
 
-  const handleCreate = async (title: string, desc: string, stepDescs: string[], stepValidators: string[][]) => {
-    await createLot(title, desc, stepDescs, stepValidators);
+  const handleCreate = async (params: CreateLotParams) => {
+    await createLot(params);
     setView("list");
   };
 

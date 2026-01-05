@@ -1,17 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { CreateLotParams } from "@/app/hooks/useSupplyChain";
 
 type StepInput = { desc: string; validators: string };
 
 type CreateLotFormProps = {
-  onCreate: (title: string, desc: string, stepDescs: string[], stepValidators: string[][]) => Promise<void>;
+  onCreate: (params: CreateLotParams) => Promise<void>;
   onCancel: () => void;
 };
 
 export function CreateLotForm({ onCreate, onCancel }: CreateLotFormProps) {
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [unit, setUnit] = useState("unités");
+  const [origin, setOrigin] = useState("");
   const [steps, setSteps] = useState<StepInput[]>([{ desc: "Production", validators: "" }]);
   const [loading, setLoading] = useState(false);
 
@@ -25,15 +29,21 @@ export function CreateLotForm({ onCreate, onCancel }: CreateLotFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !desc.trim()) return;
+    if (!title.trim() || !desc.trim() || !quantity) return;
     
     setLoading(true);
     try {
-      const descriptions = steps.map(s => s.desc).filter(Boolean);
-      const validators = steps.map(s => 
-        s.validators.split(",").map(v => v.trim()).filter(v => v.length > 0)
-      );
-      await onCreate(title, desc, descriptions, validators);
+      await onCreate({
+        title,
+        description: desc,
+        quantity: parseInt(quantity),
+        unit,
+        origin,
+        stepDescriptions: steps.map(s => s.desc).filter(Boolean),
+        stepValidators: steps.map(s => 
+          s.validators.split(",").map(v => v.trim()).filter(v => v.length > 0)
+        ),
+      });
     } catch (err) {
       console.error(err);
     } finally {
@@ -59,7 +69,7 @@ export function CreateLotForm({ onCreate, onCancel }: CreateLotFormProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1.5">
-                Nom du lot
+                Nom du lot *
               </label>
               <input
                 type="text"
@@ -72,7 +82,7 @@ export function CreateLotForm({ onCreate, onCancel }: CreateLotFormProps) {
             </div>
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1.5">
-                Description
+                Description *
               </label>
               <input
                 type="text"
@@ -81,6 +91,53 @@ export function CreateLotForm({ onCreate, onCancel }: CreateLotFormProps) {
                 placeholder="Détails du lot"
                 className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
                 required
+              />
+            </div>
+          </div>
+
+          {/* Quantity, Unit, Origin */}
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1.5">
+                Quantité *
+              </label>
+              <input
+                type="number"
+                value={quantity}
+                onChange={e => setQuantity(e.target.value)}
+                placeholder="100"
+                min="1"
+                className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1.5">
+                Unité
+              </label>
+              <select
+                value={unit}
+                onChange={e => setUnit(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 bg-white"
+              >
+                <option value="unités">Unités</option>
+                <option value="kg">Kilogrammes</option>
+                <option value="L">Litres</option>
+                <option value="m³">Mètres cubes</option>
+                <option value="palettes">Palettes</option>
+                <option value="cartons">Cartons</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1.5">
+                Origine
+              </label>
+              <input
+                type="text"
+                value={origin}
+                onChange={e => setOrigin(e.target.value)}
+                placeholder="France"
+                className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
               />
             </div>
           </div>
@@ -140,7 +197,7 @@ export function CreateLotForm({ onCreate, onCancel }: CreateLotFormProps) {
           <div className="pt-4 flex justify-end">
             <button
               type="submit"
-              disabled={loading || !title.trim() || !desc.trim()}
+              disabled={loading || !title.trim() || !desc.trim() || !quantity}
               className="px-5 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? "Création..." : "Créer le lot"}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Lot } from "@/app/hooks/useSupplyChain";
 import { FormattedDate } from "../ui/FormattedDate";
+import { QRCodeModal } from "../ui/QRCodeModal";
 
 type LotDetailProps = {
   lot: Lot;
@@ -13,6 +14,7 @@ type LotDetailProps = {
 
 export function LotDetail({ lot, onBack, onValidate, account }: LotDetailProps) {
   const [validatingStep, setValidatingStep] = useState<number | null>(null);
+  const [showQR, setShowQR] = useState(false);
   
   const completedSteps = lot.steps.filter(s => s.status === 1).length;
   const totalSteps = lot.steps.length;
@@ -52,7 +54,7 @@ export function LotDetail({ lot, onBack, onValidate, account }: LotDetailProps) 
       {/* Header */}
       <div className="bg-white border border-stone-200 rounded-xl p-6 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-          <div>
+          <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
               <span className="text-xs font-mono text-stone-400 bg-stone-100 px-2 py-0.5 rounded">
                 #{lot.id}
@@ -69,15 +71,42 @@ export function LotDetail({ lot, onBack, onValidate, account }: LotDetailProps) 
             </div>
             <h1 className="text-xl font-semibold text-stone-900">{lot.title}</h1>
             <p className="text-stone-500 mt-1">{lot.description}</p>
+
+            {/* Details */}
+            <div className="flex flex-wrap gap-4 mt-4 text-sm">
+              <div className="flex items-center gap-2 text-stone-600">
+                <span className="text-stone-400">Quantité:</span>
+                <span className="font-medium">{lot.quantity} {lot.unit}</span>
+              </div>
+              {lot.origin && (
+                <div className="flex items-center gap-2 text-stone-600">
+                  <span className="text-stone-400">Origine:</span>
+                  <span className="font-medium">{lot.origin}</span>
+                </div>
+              )}
+            </div>
           </div>
           
-          <div className="text-sm text-right">
-            <div className="text-stone-400">Créé par</div>
-            <div className="font-mono text-stone-600 text-xs mt-0.5">
-              {lot.creator.slice(0, 8)}...{lot.creator.slice(-6)}
-            </div>
-            <div className="text-stone-400 mt-2">
-              <FormattedDate timestamp={lot.createdAt} />
+          <div className="flex flex-col items-end gap-3">
+            {/* QR Code button */}
+            <button
+              onClick={() => setShowQR(true)}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-teal-600 bg-teal-50 rounded-lg hover:bg-teal-100 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+              </svg>
+              QR Code
+            </button>
+
+            <div className="text-sm text-right">
+              <div className="text-stone-400">Créé par</div>
+              <div className="font-mono text-stone-600 text-xs mt-0.5">
+                {lot.creator.slice(0, 8)}...{lot.creator.slice(-6)}
+              </div>
+              <div className="text-stone-400 mt-2">
+                <FormattedDate timestamp={lot.createdAt} />
+              </div>
             </div>
           </div>
         </div>
@@ -199,7 +228,15 @@ export function LotDetail({ lot, onBack, onValidate, account }: LotDetailProps) 
           })}
         </div>
       </div>
+
+      {/* QR Code Modal */}
+      {showQR && (
+        <QRCodeModal
+          lotId={lot.id}
+          lotTitle={lot.title}
+          onClose={() => setShowQR(false)}
+        />
+      )}
     </div>
   );
 }
-

@@ -146,7 +146,10 @@ export function LotList({ lots, account, onSelect, onCreate, loading }: LotListP
                     </td>
                     <td className="px-4 py-3">
                       <div className="font-medium text-stone-900">{lot.title}</div>
-                      <div className="text-stone-400 text-xs mt-0.5 line-clamp-1">{lot.description}</div>
+                      <div className="text-stone-400 text-xs mt-0.5">
+                        {lot.quantity > 0 && <span>{lot.quantity} {lot.unit}</span>}
+                        {lot.origin && <span> · {lot.origin}</span>}
+                      </div>
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell">
                       <span className="font-mono text-xs text-stone-400">
