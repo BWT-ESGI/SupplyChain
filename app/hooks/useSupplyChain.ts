@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAccount, useWriteContract, usePublicClient } from "wagmi";
 import { type Address, parseEther } from "viem";
 
-const CONTRACT_ADDRESS = "0x3D464790b395Ef1D4229eb7fbBE13EE581F242Ce";
+export const CONTRACT_ADDRESS = "0x3D464790b395Ef1D4229eb7fbBE13EE581F242Ce";
 
 const CONTRACT_ABI = [
   { inputs: [{ name: "_title", type: "string" }, { name: "_description", type: "string" }, { name: "_quantity", type: "uint256" }, { name: "_unit", type: "string" }, { name: "_origin", type: "string" }, { name: "_price", type: "uint256" }, { name: "_stepDescriptions", type: "string[]" }, { name: "_stepValidators", type: "address[][]" }], name: "createLot", outputs: [{ name: "", type: "uint256" }], stateMutability: "nonpayable", type: "function" },

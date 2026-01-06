@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAccount, useWriteContract, usePublicClient } from "wagmi";
 import { formatEther, encodeFunctionData } from "viem";
+import { CONTRACT_ADDRESS as SUPPLY_CHAIN_ADDRESS } from "./useSupplyChain";
 
 const ESCROW_ADDRESS = "0x4529ab5ACAB18cFAe13ebD4b13B2bb03Bb234659";
 
@@ -15,6 +16,7 @@ const ESCROW_ABI = [
   { inputs: [], name: "getContractBalance", outputs: [{ name: "", type: "uint256" }], stateMutability: "view", type: "function" },
   { inputs: [{ name: "", type: "address" }], name: "totalReceived", outputs: [{ name: "", type: "uint256" }], stateMutability: "view", type: "function" },
   { inputs: [{ name: "", type: "address" }], name: "totalSpent", outputs: [{ name: "", type: "uint256" }], stateMutability: "view", type: "function" },
+  { inputs: [], name: "supplyChain", outputs: [{ name: "", type: "address" }], stateMutability: "view", type: "function" },
 ] as const;
 
 export type Payment = {
@@ -43,8 +45,8 @@ export function useEscrow() {
   const waitForReceipt = async (hash: `0x${string}`) => {
     if (!publicClient) return;
     try {
-      await publicClient.waitForTransactionReceipt({ 
-        hash, 
+      await publicClient.waitForTransactionReceipt({
+        hash,
         timeout: 120_000, // 2 minutes timeout
         pollingInterval: 2_000, // Poll every 2 seconds
       });
@@ -59,6 +61,25 @@ export function useEscrow() {
     if (!publicClient) return;
     setLoading(true);
     try {
+      // Verify configuration
+      try {
+        const linkedSupplyChain = (await publicClient.readContract({
+          address: ESCROW_ADDRESS,
+          abi: ESCROW_ABI,
+          functionName: "supplyChain",
+        })) as string;
+
+        if (linkedSupplyChain.toLowerCase() !== SUPPLY_CHAIN_ADDRESS.toLowerCase()) {
+          console.error("CRITICAL CONFIGURATION ERROR: Address Mismatch!");
+          console.error(`Escrow is linked to SupplyChain: ${linkedSupplyChain}`);
+          console.error(`Frontend is using SupplyChain: ${SUPPLY_CHAIN_ADDRESS}`);
+          console.error("Please update app/hooks/useSupplyChain.ts or redeploy contracts.");
+          alert(`Erreur de configuration: Les contrats ne sont pas synchronisés.\nEscrow attend SupplyChain: ${linkedSupplyChain}\nFrontend utilise: ${SUPPLY_CHAIN_ADDRESS}`);
+        }
+      } catch (err) {
+        console.warn("Could not verify linked supply chain address:", err);
+      }
+
       const count = (await publicClient.readContract({
         address: ESCROW_ADDRESS,
         abi: ESCROW_ABI,
@@ -147,9 +168,9 @@ export function useEscrow() {
 
   const depositPayment = async (lotId: number, priceWei: bigint) => {
     if (!address || !publicClient) throw new Error("Not connected");
-    
+
     console.log("Attempting to deposit payment for lot:", lotId, "amount:", priceWei.toString());
-    
+
     try {
       // Use writeContractAsync directly - let MetaMask handle gas estimation
       // But we'll catch and handle errors more gracefully
@@ -162,20 +183,20 @@ export function useEscrow() {
         // Don't set gas limit - let MetaMask estimate
         // If it fails, we'll see the error message
       });
-      
+
       console.log("Transaction sent, hash:", hash);
       await waitForReceipt(hash);
       await fetchPayments();
     } catch (error: any) {
       console.error("Error in depositPayment:", error);
-      
+
       // Check if it's a gas estimation error
       if (error?.message?.includes("gas") || error?.message?.includes("Gas")) {
         console.error("Gas estimation failed. This might mean:");
         console.error("1. The SupplyChain contract doesn't have getLotPriceAndCreator function");
         console.error("2. The contract consumes too much gas");
         console.error("3. The RPC is having issues");
-        
+
         // Try one more time with a very conservative gas limit
         console.log("Retrying with fixed gas limit of 3M...");
         try {
