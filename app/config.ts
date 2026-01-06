@@ -2,11 +2,9 @@ import { http, createConfig } from 'wagmi'
 import { sepolia } from 'wagmi/chains'
 import { injected } from 'wagmi/connectors'
 
-// Use Infura RPC - same as MetaMask for consistency
-// If you have an Infura API key, use: https://sepolia.infura.io/v3/YOUR_API_KEY
-// Otherwise, try the public endpoint (may not work without API key)
-const INFURA_API_KEY = '8158eb4d1fed430ea5d8f2969758ad21' // Your Infura API key
-const SEPOLIA_RPC = `https://sepolia.infura.io/v3/${INFURA_API_KEY}`
+// Use public RPC with timeout configuration
+// Alternative RPCs: rpc.sepolia.org, ethereum-sepolia-rpc.publicnode.com, sepolia.gateway.tenderly.co
+const SEPOLIA_RPC = 'https://ethereum-sepolia-rpc.publicnode.com'
 
 export const config = createConfig({
   chains: [sepolia],
@@ -14,7 +12,11 @@ export const config = createConfig({
     injected(),
   ],
   transports: {
-    [sepolia.id]: http(SEPOLIA_RPC), 
+    [sepolia.id]: http(SEPOLIA_RPC, {
+      timeout: 30_000, // 30 seconds timeout
+      retryCount: 3,
+      retryDelay: 1_000,
+    }), 
   },
   ssr: true,
 })

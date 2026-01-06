@@ -19,8 +19,7 @@ contract SupplyChain {
         address creator;      // slot 1 (20 bytes) + 12 bytes padding
         uint64 createdAt;     // slot 2 (8 bytes)
         uint128 quantity;     // slot 2 (16 bytes) - packed with createdAt
-        uint128 price;        // slot 3 (16 bytes)
-        bool exists;          // slot 3 (1 byte) - packed with price
+        bool exists;          // slot 3 (1 byte)
         string title;         // slot 4+
         string description;   // slot 5+
         string unit;          // slot 6+
@@ -32,7 +31,7 @@ contract SupplyChain {
     
     uint256 public nextLotId;
 
-    event LotCreated(uint256 indexed lotId, string title, address indexed creator, uint256 price);
+    event LotCreated(uint256 indexed lotId, string title, address indexed creator);
     event StepAdded(uint256 indexed lotId, uint256 stepIndex, string description);
     event StepValidated(uint256 indexed lotId, uint256 stepIndex, address validator);
 
@@ -42,14 +41,12 @@ contract SupplyChain {
         uint256 _quantity,
         string memory _unit,
         string memory _origin,
-        uint256 _price,
         string[] memory _stepDescriptions, 
         address[][] memory _stepValidators
     ) public returns (uint256) {
         require(_stepDescriptions.length == _stepValidators.length, "Steps data mismatch");
         require(_quantity > 0, "Quantity must be greater than 0");
         require(_quantity <= type(uint128).max, "Quantity too large");
-        require(_price <= type(uint128).max, "Price too large");
 
         uint256 lotId = nextLotId;
         
@@ -60,7 +57,6 @@ contract SupplyChain {
             quantity: uint128(_quantity),
             unit: _unit,
             origin: _origin,
-            price: uint128(_price),
             creator: msg.sender,
             createdAt: uint64(block.timestamp),
             exists: true
@@ -81,7 +77,7 @@ contract SupplyChain {
             }
         }
 
-        emit LotCreated(lotId, _title, msg.sender, _price);
+        emit LotCreated(lotId, _title, msg.sender);
         unchecked {
             nextLotId++;
         }
@@ -124,11 +120,6 @@ contract SupplyChain {
         emit StepValidated(_lotId, _stepIndex, msg.sender);
     }
 
-    // Optimized function for EscrowPayment (only returns what's needed)
-    function getLotPriceAndCreator(uint256 _lotId) external view returns (uint128 price, address creator, bool exists) {
-        Lot storage lot = lots[_lotId];
-        return (lot.price, lot.creator, lot.exists);
-    }
 
     function getLot(uint256 _lotId) public view returns (Lot memory) {
         return lots[_lotId];

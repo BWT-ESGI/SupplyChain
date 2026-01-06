@@ -55,15 +55,15 @@ export function LotList({ lots, account, onSelect, onCreate, loading }: LotListP
       {/* Header compact */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-stone-900">Marketplace</h1>
-          <p className="text-sm text-stone-500 mt-0.5">{stats.total} lot{stats.total > 1 ? 's' : ''} disponible{stats.total > 1 ? 's' : ''}</p>
+          <h1 className="text-2xl font-semibold text-stone-900">Lots</h1>
+          <p className="text-sm text-stone-500 mt-0.5">{stats.total} lot{stats.total > 1 ? 's' : ''} enregistré{stats.total > 1 ? 's' : ''}</p>
         </div>
         <button
           onClick={onCreate}
           className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors"
         >
           <span>+</span>
-          Vendre un lot
+          Nouveau lot
         </button>
       </div>
 
@@ -110,11 +110,11 @@ export function LotList({ lots, account, onSelect, onCreate, loading }: LotListP
       ) : filteredLots.length === 0 ? (
         <div className="py-12 text-center">
           <div className="text-stone-400 text-sm">
-            {lots.length === 0 ? "Aucun lot en vente" : "Aucun résultat"}
+            {lots.length === 0 ? "Aucun lot créé" : "Aucun résultat"}
           </div>
           {lots.length === 0 && (
             <button onClick={onCreate} className="mt-3 text-teal-600 text-sm font-medium hover:underline">
-              Mettre en vente votre premier lot
+              Créer votre premier lot
             </button>
           )}
         </div>
@@ -139,10 +139,6 @@ export function LotList({ lots, account, onSelect, onCreate, loading }: LotListP
                     <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded">
                       Terminé
                     </span>
-                  ) : progress.completed === 0 ? (
-                    <span className="text-xs font-medium text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
-                      En vente
-                    </span>
                   ) : (
                     <span className="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded">
                       En cours
@@ -164,15 +160,10 @@ export function LotList({ lots, account, onSelect, onCreate, loading }: LotListP
                   )}
                 </div>
 
-                {/* Price */}
-                <div className="flex items-end justify-between pt-3 border-t border-stone-100">
-                  <div>
-                    <div className="text-xs text-stone-400">Prix</div>
-                    <div className="text-lg font-bold text-teal-600">{lot.price} SepoliaETH</div>
-                  </div>
-                  {!done && progress.completed > 0 && (
-                    <div className="text-right">
-                      <div className="text-xs text-stone-400 mb-1">Progression</div>
+                {!done && progress.completed > 0 && (
+                  <div className="pt-3 border-t border-stone-100">
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs text-stone-400">Progression</div>
                       <div className="flex items-center gap-2">
                         <div className="w-12 h-1.5 bg-stone-100 rounded-full overflow-hidden">
                           <div 
@@ -180,15 +171,17 @@ export function LotList({ lots, account, onSelect, onCreate, loading }: LotListP
                             style={{ width: `${progress.percent}%` }}
                           />
                         </div>
-                        <span className="text-xs text-stone-500">{progress.completed}/{progress.total}</span>
+                        <span className="text-xs font-medium text-stone-500">
+                          {progress.completed}/{progress.total}
+                        </span>
                       </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
 
-                {/* Seller */}
+                {/* Creator */}
                 <div className="mt-3 pt-3 border-t border-stone-100 flex items-center justify-between text-xs">
-                  <span className="text-stone-400">Vendeur</span>
+                  <span className="text-stone-400">Créateur</span>
                   <span className="font-mono text-stone-500">
                     {lot.creator.slice(0, 6)}...{lot.creator.slice(-4)}
                   </span>

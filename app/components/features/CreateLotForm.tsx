@@ -16,7 +16,6 @@ export function CreateLotForm({ onCreate, onCancel }: CreateLotFormProps) {
   const [quantity, setQuantity] = useState("");
   const [unit, setUnit] = useState("unités");
   const [origin, setOrigin] = useState("");
-  const [price, setPrice] = useState("");
   const [steps, setSteps] = useState<StepInput[]>([{ desc: "Production", validators: "" }]);
   const [loading, setLoading] = useState(false);
 
@@ -30,7 +29,7 @@ export function CreateLotForm({ onCreate, onCancel }: CreateLotFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !desc.trim() || !quantity || !price) return;
+    if (!title.trim() || !desc.trim() || !quantity) return;
     
     setLoading(true);
     try {
@@ -40,7 +39,6 @@ export function CreateLotForm({ onCreate, onCancel }: CreateLotFormProps) {
         quantity: parseInt(quantity),
         unit,
         origin,
-        priceEth: price,
         stepDescriptions: steps.map(s => s.desc).filter(Boolean),
         stepValidators: steps.map(s => 
           s.validators.split(",").map(v => v.trim()).filter(v => v.length > 0)
@@ -64,7 +62,7 @@ export function CreateLotForm({ onCreate, onCancel }: CreateLotFormProps) {
       </button>
 
       <div className="bg-white border border-stone-200 rounded-xl p-6">
-        <h2 className="text-lg font-semibold text-stone-900 mb-6">Créer un lot à vendre</h2>
+        <h2 className="text-lg font-semibold text-stone-900 mb-6">Créer un lot</h2>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Basic info */}
@@ -97,8 +95,8 @@ export function CreateLotForm({ onCreate, onCancel }: CreateLotFormProps) {
             </div>
           </div>
 
-          {/* Quantity, Unit, Origin, Price */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {/* Quantity, Unit, Origin */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1.5">
                 Quantité *
@@ -140,21 +138,6 @@ export function CreateLotForm({ onCreate, onCancel }: CreateLotFormProps) {
                 onChange={e => setOrigin(e.target.value)}
                 placeholder="France"
                 className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1.5">
-                Prix (SepoliaETH) *
-              </label>
-              <input
-                type="number"
-                value={price}
-                onChange={e => setPrice(e.target.value)}
-                placeholder="0.00001"
-                step="0.00001"
-                min="0"
-                className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
-                required
               />
             </div>
           </div>
@@ -214,10 +197,10 @@ export function CreateLotForm({ onCreate, onCancel }: CreateLotFormProps) {
           <div className="pt-4 flex justify-end">
             <button
               type="submit"
-              disabled={loading || !title.trim() || !desc.trim() || !quantity || !price}
+              disabled={loading || !title.trim() || !desc.trim() || !quantity}
               className="px-5 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? "Création..." : "Mettre en vente"}
+              {loading ? "Création..." : "Créer le lot"}
             </button>
           </div>
         </form>

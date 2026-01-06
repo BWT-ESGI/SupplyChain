@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/ben/Library/CloudStorage/SynologyDrive-ben/dev/Cours-ESGI/ESGI Cours/blockchain/SupplyChain/blockchain/contracts/SupplyChain.sol": {
-      "lastModificationDate": 1767707235621,
-      "contentHash": "5d52c6105307bd49e537bb93965bf7dd",
+      "lastModificationDate": 1767714222793,
+      "contentHash": "5904d1922c8de72094bbf0e170bc774a",
       "sourceName": "contracts/SupplyChain.sol",
       "solcConfig": {
         "version": "0.8.28",
@@ -35,43 +35,6 @@
       ],
       "artifacts": [
         "SupplyChain"
-      ]
-    },
-    "/Users/ben/Library/CloudStorage/SynologyDrive-ben/dev/Cours-ESGI/ESGI Cours/blockchain/SupplyChain/blockchain/contracts/EscrowPayment.sol": {
-      "lastModificationDate": 1767708954482,
-      "contentHash": "b8b42f4ad88680a9c2354c65e3802015",
-      "sourceName": "contracts/EscrowPayment.sol",
-      "solcConfig": {
-        "version": "0.8.28",
-        "settings": {
-          "evmVersion": "paris",
-          "optimizer": {
-            "enabled": false,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        "^0.8.28"
-      ],
-      "artifacts": [
-        "EscrowPayment",
-        "ISupplyChain"
       ]
     }
   }
