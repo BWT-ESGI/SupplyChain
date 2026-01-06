@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAccount, useSendTransaction, useWriteContract, usePublicClient } from "wagmi";
 import { formatEther, encodeFunctionData } from "viem";
 
-const ESCROW_ADDRESS = "0x6167C20988dc09A2859a2B84c476246DAc7E88F0";
+const ESCROW_ADDRESS = "0xcf0cBCf0Ba6219a77a154991C351b14A1388C168";
 
 const ESCROW_ABI = [
   { inputs: [{ name: "_lotId", type: "uint256" }], name: "depositPayment", outputs: [], stateMutability: "payable", type: "function" },
