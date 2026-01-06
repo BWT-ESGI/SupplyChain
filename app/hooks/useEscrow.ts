@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAccount, useWriteContract, usePublicClient } from "wagmi";
-import { formatEther } from "viem";
+import { formatEther, encodeFunctionData } from "viem";
 
-const ESCROW_ADDRESS = "0x69c9E2A3F7a8D179394fb8582168D7e8AFAC580A";
+const ESCROW_ADDRESS = "0x3a4cdea25f4EEb041dEa62c3242a52197F1DaDD6";
 
 const ESCROW_ABI = [
   { inputs: [{ name: "_lotId", type: "uint256" }], name: "depositPayment", outputs: [], stateMutability: "payable", type: "function" },
@@ -148,20 +148,49 @@ export function useEscrow() {
   const depositPayment = async (lotId: number, priceWei: bigint) => {
     if (!address || !publicClient) throw new Error("Not connected");
     
-    // Use writeContractAsync directly - MetaMask will see the function from the ABI
-    // If gas estimation fails, it will show an error but at least the function will be visible
-    const hash = await writeContractAsync({
-      address: ESCROW_ADDRESS,
-      abi: ESCROW_ABI,
-      functionName: "depositPayment",
-      args: [BigInt(lotId)],
-      value: priceWei,
-      // Don't set gas limit here - let MetaMask estimate first
-      // If estimation fails due to high gas, we'll handle it in the error
-    });
-    
-    await waitForReceipt(hash);
-    await fetchPayments();
+    try {
+      // Try to estimate gas first
+      const estimatedGas = await publicClient.estimateGas({
+        account: address,
+        to: ESCROW_ADDRESS,
+        data: encodeFunctionData({
+          abi: ESCROW_ABI,
+          functionName: "depositPayment",
+          args: [BigInt(lotId)],
+        }),
+        value: priceWei,
+      });
+      
+      // Cap the gas at 8M (under Sepolia's 16.7M limit)
+      const gasLimit = estimatedGas > BigInt(8_000_000) ? BigInt(8_000_000) : estimatedGas;
+      
+      // Use writeContractAsync with the capped gas limit
+      const hash = await writeContractAsync({
+        address: ESCROW_ADDRESS,
+        abi: ESCROW_ABI,
+        functionName: "depositPayment",
+        args: [BigInt(lotId)],
+        value: priceWei,
+        gas: gasLimit,
+      });
+      
+      await waitForReceipt(hash);
+      await fetchPayments();
+    } catch (error: any) {
+      console.error("Error estimating gas, trying with fixed limit:", error);
+      // If estimation fails, try with a fixed safe limit
+      const hash = await writeContractAsync({
+        address: ESCROW_ADDRESS,
+        abi: ESCROW_ABI,
+        functionName: "depositPayment",
+        args: [BigInt(lotId)],
+        value: priceWei,
+        gas: BigInt(5_000_000), // Safe limit well under 16.7M
+      });
+      
+      await waitForReceipt(hash);
+      await fetchPayments();
+    }
   };
 
   const releasePayment = async (lotId: number) => {
