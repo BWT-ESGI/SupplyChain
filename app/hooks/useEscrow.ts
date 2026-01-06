@@ -3,7 +3,7 @@ import { useAccount, useWriteContract, usePublicClient } from "wagmi";
 import { formatEther, encodeFunctionData } from "viem";
 import { CONTRACT_ADDRESS as SUPPLY_CHAIN_ADDRESS } from "./useSupplyChain";
 
-const ESCROW_ADDRESS = "0x4529ab5ACAB18cFAe13ebD4b13B2bb03Bb234659";
+const ESCROW_ADDRESS = "0x520c0552A6d81032aAe7a09577F06a80B0dbbE83";
 
 const ESCROW_ABI = [
   { inputs: [{ name: "_lotId", type: "uint256" }], name: "depositPayment", outputs: [], stateMutability: "payable", type: "function" },
