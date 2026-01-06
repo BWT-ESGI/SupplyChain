@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { useAccount, useSendTransaction, useWriteContract, usePublicClient } from "wagmi";
-import { formatEther, encodeFunctionData } from "viem";
+import { useAccount, useWriteContract, usePublicClient } from "wagmi";
+import { formatEther } from "viem";
 
-const ESCROW_ADDRESS = "0x6Cf8fE211D0A02821e36e43eDD5f016A1Ab3f57e";
+const ESCROW_ADDRESS = "0xa2E6556FD531CC83f6AFA410d5D5C2088229707D";
 
 const ESCROW_ABI = [
   { inputs: [{ name: "_lotId", type: "uint256" }], name: "depositPayment", outputs: [], stateMutability: "payable", type: "function" },
@@ -31,7 +31,6 @@ export type Payment = {
 
 export function useEscrow() {
   const { address } = useAccount();
-  const { sendTransactionAsync } = useSendTransaction();
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
 
@@ -150,29 +149,23 @@ export function useEscrow() {
   const depositPayment = async (lotId: number, priceWei: bigint) => {
     if (!address || !publicClient) throw new Error("Not connected");
     
-    // Encode function data
-    const data = encodeFunctionData({
+    // Get gas price and calculate maxFeePerGas
+    const gasPrice = await publicClient.getGasPrice();
+    const maxFeePerGas = gasPrice * BigInt(2);
+    const maxPriorityFeePerGas = gasPrice / BigInt(10); // 10% of base fee
+    
+    // Use writeContract with explicit gas limit and EIP-1559 params
+    // This should force MetaMask to use our gas limit
+    const hash = await writeContractAsync({
+      address: ESCROW_ADDRESS,
       abi: ESCROW_ABI,
       functionName: "depositPayment",
       args: [BigInt(lotId)],
-    });
-    
-    // Force a very conservative gas limit (8M - well under 16.7M limit)
-    const gasLimit = BigInt(8_000_000);
-    
-    // Get current gas price
-    const gasPrice = await publicClient.getGasPrice();
-    
-    // Use sendTransaction with explicit gas limit
-    // Use type: 0 (legacy) to force MetaMask to use our gas limit
-    const hash = await sendTransactionAsync({
-      to: ESCROW_ADDRESS,
-      data,
       value: priceWei,
-      gas: gasLimit,
-      gasPrice: gasPrice,
-      type: "legacy", // Force legacy transaction type
-    } as any);
+      gas: BigInt(8_000_000), // Force 8M limit (under 16.7M cap)
+      maxFeePerGas: maxFeePerGas,
+      maxPriorityFeePerGas: maxPriorityFeePerGas,
+    });
     
     await waitForReceipt(hash);
     await fetchPayments();
