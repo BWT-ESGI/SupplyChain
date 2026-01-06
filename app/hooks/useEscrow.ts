@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAccount, useWriteContract, usePublicClient } from "wagmi";
 import { formatEther, encodeFunctionData } from "viem";
 
-const ESCROW_ADDRESS = "0x3a4cdea25f4EEb041dEa62c3242a52197F1DaDD6";
+const ESCROW_ADDRESS = "0x4529ab5ACAB18cFAe13ebD4b13B2bb03Bb234659";
 
 const ESCROW_ABI = [
   { inputs: [{ name: "_lotId", type: "uint256" }], name: "depositPayment", outputs: [], stateMutability: "payable", type: "function" },
@@ -148,48 +148,56 @@ export function useEscrow() {
   const depositPayment = async (lotId: number, priceWei: bigint) => {
     if (!address || !publicClient) throw new Error("Not connected");
     
+    console.log("Attempting to deposit payment for lot:", lotId, "amount:", priceWei.toString());
+    
     try {
-      // Try to estimate gas first
-      const estimatedGas = await publicClient.estimateGas({
-        account: address,
-        to: ESCROW_ADDRESS,
-        data: encodeFunctionData({
-          abi: ESCROW_ABI,
-          functionName: "depositPayment",
-          args: [BigInt(lotId)],
-        }),
-        value: priceWei,
-      });
-      
-      // Cap the gas at 8M (under Sepolia's 16.7M limit)
-      const gasLimit = estimatedGas > BigInt(8_000_000) ? BigInt(8_000_000) : estimatedGas;
-      
-      // Use writeContractAsync with the capped gas limit
+      // Use writeContractAsync directly - let MetaMask handle gas estimation
+      // But we'll catch and handle errors more gracefully
       const hash = await writeContractAsync({
         address: ESCROW_ADDRESS,
         abi: ESCROW_ABI,
         functionName: "depositPayment",
         args: [BigInt(lotId)],
         value: priceWei,
-        gas: gasLimit,
+        // Don't set gas limit - let MetaMask estimate
+        // If it fails, we'll see the error message
       });
       
+      console.log("Transaction sent, hash:", hash);
       await waitForReceipt(hash);
       await fetchPayments();
     } catch (error: any) {
-      console.error("Error estimating gas, trying with fixed limit:", error);
-      // If estimation fails, try with a fixed safe limit
-      const hash = await writeContractAsync({
-        address: ESCROW_ADDRESS,
-        abi: ESCROW_ABI,
-        functionName: "depositPayment",
-        args: [BigInt(lotId)],
-        value: priceWei,
-        gas: BigInt(5_000_000), // Safe limit well under 16.7M
-      });
+      console.error("Error in depositPayment:", error);
       
-      await waitForReceipt(hash);
-      await fetchPayments();
+      // Check if it's a gas estimation error
+      if (error?.message?.includes("gas") || error?.message?.includes("Gas")) {
+        console.error("Gas estimation failed. This might mean:");
+        console.error("1. The SupplyChain contract doesn't have getLotPriceAndCreator function");
+        console.error("2. The contract consumes too much gas");
+        console.error("3. The RPC is having issues");
+        
+        // Try one more time with a very conservative gas limit
+        console.log("Retrying with fixed gas limit of 3M...");
+        try {
+          const hash = await writeContractAsync({
+            address: ESCROW_ADDRESS,
+            abi: ESCROW_ABI,
+            functionName: "depositPayment",
+            args: [BigInt(lotId)],
+            value: priceWei,
+            gas: BigInt(3_000_000), // Very conservative limit
+          });
+          console.log("Retry successful, hash:", hash);
+          await waitForReceipt(hash);
+          await fetchPayments();
+        } catch (retryError: any) {
+          console.error("Retry also failed:", retryError);
+          throw new Error(`Failed to deposit payment: ${retryError?.message || retryError}`);
+        }
+      } else {
+        // Re-throw other errors
+        throw error;
+      }
     }
   };
 

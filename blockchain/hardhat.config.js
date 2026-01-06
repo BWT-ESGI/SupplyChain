@@ -14,14 +14,13 @@ const config = {
   },
   networks: {
     sepolia: {
-      // On force le RPC public qui ne nécessite pas de clé, pour débloquer la situation
-      url: "https://ethereum-sepolia-rpc.publicnode.com",
+      url: process.env.SEPOLIA_RPC || "https://sepolia.infura.io/v3/8158eb4d1fed430ea5d8f2969758ad21",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 11155111
     }
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: process.env.ETHERSCAN_API_KEY || "",
   },
   sourcify: {
     enabled: true
