@@ -75,6 +75,35 @@
           "type": "uint256"
         }
       ],
+      "name": "getLotPriceAndCreator",
+      "outputs": [
+        {
+          "internalType": "uint128",
+          "name": "price",
+          "type": "uint128"
+        },
+        {
+          "internalType": "address",
+          "name": "creator",
+          "type": "address"
+        },
+        {
+          "internalType": "bool",
+          "name": "exists",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_lotId",
+          "type": "uint256"
+        }
+      ],
       "name": "getLotStepsCount",
       "outputs": [
         {

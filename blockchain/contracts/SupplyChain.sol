@@ -13,17 +13,18 @@ contract SupplyChain {
         StepStatus status;
     }
 
+    // Packed struct to save gas
     struct Lot {
-        uint256 id;
-        string title;
-        string description;
-        uint256 quantity;
-        string unit;
-        string origin;
-        uint256 price; // Price in wei
-        address creator;
-        uint256 createdAt;
-        bool exists;
+        uint256 id;           // slot 0
+        address creator;      // slot 1 (20 bytes) + 12 bytes padding
+        uint64 createdAt;     // slot 2 (8 bytes)
+        uint128 quantity;     // slot 2 (16 bytes) - packed with createdAt
+        uint128 price;        // slot 3 (16 bytes)
+        bool exists;          // slot 3 (1 byte) - packed with price
+        string title;         // slot 4+
+        string description;   // slot 5+
+        string unit;          // slot 6+
+        string origin;        // slot 7+
     }
 
     mapping(uint256 => Lot) public lots;
@@ -47,6 +48,8 @@ contract SupplyChain {
     ) public returns (uint256) {
         require(_stepDescriptions.length == _stepValidators.length, "Steps data mismatch");
         require(_quantity > 0, "Quantity must be greater than 0");
+        require(_quantity <= type(uint128).max, "Quantity too large");
+        require(_price <= type(uint128).max, "Price too large");
 
         uint256 lotId = nextLotId;
         
@@ -54,29 +57,34 @@ contract SupplyChain {
             id: lotId,
             title: _title,
             description: _description,
-            quantity: _quantity,
+            quantity: uint128(_quantity),
             unit: _unit,
             origin: _origin,
-            price: _price,
+            price: uint128(_price),
             creator: msg.sender,
-            createdAt: block.timestamp,
+            createdAt: uint64(block.timestamp),
             exists: true
         });
 
-        for (uint256 i = 0; i < _stepDescriptions.length; i++) {
-            Step memory newStep = Step({
-                description: _stepDescriptions[i],
-                validators: _stepValidators[i],
-                validatedBy: address(0),
-                validatedAt: 0,
-                status: StepStatus.Pending
-            });
-            lotSteps[lotId].push(newStep);
-            emit StepAdded(lotId, i, _stepDescriptions[i]);
+        // Unchecked for gas optimization (array length is bounded)
+        unchecked {
+            for (uint256 i = 0; i < _stepDescriptions.length; i++) {
+                Step memory newStep = Step({
+                    description: _stepDescriptions[i],
+                    validators: _stepValidators[i],
+                    validatedBy: address(0),
+                    validatedAt: 0,
+                    status: StepStatus.Pending
+                });
+                lotSteps[lotId].push(newStep);
+                emit StepAdded(lotId, i, _stepDescriptions[i]);
+            }
         }
 
         emit LotCreated(lotId, _title, msg.sender, _price);
-        nextLotId++;
+        unchecked {
+            nextLotId++;
+        }
         return lotId;
     }
 
@@ -91,14 +99,18 @@ contract SupplyChain {
             require(lotSteps[_lotId][_stepIndex - 1].status == StepStatus.Completed, "Previous step not completed");
         }
 
+        // Optimize validator check
         bool isAuthorized = false;
         if (step.validators.length == 0) {
              isAuthorized = true;
         } else {
-            for (uint256 i = 0; i < step.validators.length; i++) {
-                if (step.validators[i] == msg.sender) {
-                    isAuthorized = true;
-                    break;
+            // Unchecked for gas optimization
+            unchecked {
+                for (uint256 i = 0; i < step.validators.length; i++) {
+                    if (step.validators[i] == msg.sender) {
+                        isAuthorized = true;
+                        break;
+                    }
                 }
             }
         }
@@ -110,6 +122,12 @@ contract SupplyChain {
         step.validatedAt = block.timestamp;
 
         emit StepValidated(_lotId, _stepIndex, msg.sender);
+    }
+
+    // Optimized function for EscrowPayment (only returns what's needed)
+    function getLotPriceAndCreator(uint256 _lotId) external view returns (uint128 price, address creator, bool exists) {
+        Lot storage lot = lots[_lotId];
+        return (lot.price, lot.creator, lot.exists);
     }
 
     function getLot(uint256 _lotId) public view returns (Lot memory) {

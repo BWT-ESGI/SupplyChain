@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAccount, useWriteContract, usePublicClient } from "wagmi";
 import { formatEther } from "viem";
 
-const ESCROW_ADDRESS = "0x520c0552A6d81032aAe7a09577F06a80B0dbbE83";
+const ESCROW_ADDRESS = "0xAeAac2878c758eA28840d258B10f1E9546c903Df";
 
 const ESCROW_ABI = [
   { inputs: [{ name: "_lotId", type: "uint256" }], name: "depositPayment", outputs: [], stateMutability: "payable", type: "function" },
@@ -154,6 +154,7 @@ export function useEscrow() {
       functionName: "depositPayment",
       args: [BigInt(lotId)],
       value: priceWei,
+      gas: BigInt(15_000_000), // Limit gas to avoid Sepolia cap (16.7M)
     });
     await waitForReceipt(hash);
     await fetchPayments();
