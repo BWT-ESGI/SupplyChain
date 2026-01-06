@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useAccount, useWriteContract, usePublicClient } from "wagmi";
+import { useAccount, useSendTransaction, useWriteContract, usePublicClient } from "wagmi";
 import { formatEther, encodeFunctionData } from "viem";
 
 const ESCROW_ADDRESS = "0x6167C20988dc09A2859a2B84c476246DAc7E88F0";
@@ -31,6 +31,7 @@ export type Payment = {
 
 export function useEscrow() {
   const { address } = useAccount();
+  const { sendTransactionAsync } = useSendTransaction();
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
 
@@ -149,15 +150,16 @@ export function useEscrow() {
   const depositPayment = async (lotId: number, priceWei: bigint) => {
     if (!address || !publicClient) throw new Error("Not connected");
     
+    // Encode function data
+    const data = encodeFunctionData({
+      abi: ESCROW_ABI,
+      functionName: "depositPayment",
+      args: [BigInt(lotId)],
+    });
+    
     // Estimate gas first, then cap it
     let gasEstimate: bigint;
     try {
-      const data = encodeFunctionData({
-        abi: ESCROW_ABI,
-        functionName: "depositPayment",
-        args: [BigInt(lotId)],
-      });
-      
       gasEstimate = await publicClient.estimateGas({
         account: address,
         to: ESCROW_ADDRESS,
@@ -165,23 +167,27 @@ export function useEscrow() {
         value: priceWei,
       });
       
-      // Cap at 15M (under Sepolia's 16.7M limit)
-      if (gasEstimate > BigInt(15_000_000)) {
-        gasEstimate = BigInt(15_000_000);
+      // Cap at 12M (well under Sepolia's 16.7M limit)
+      if (gasEstimate > BigInt(12_000_000)) {
+        gasEstimate = BigInt(12_000_000);
       }
     } catch {
       // If estimation fails, use safe default
       gasEstimate = BigInt(10_000_000);
     }
     
-    const hash = await writeContractAsync({
-      address: ESCROW_ADDRESS,
-      abi: ESCROW_ABI,
-      functionName: "depositPayment",
-      args: [BigInt(lotId)],
+    // Get current gas price
+    const gasPrice = await publicClient.getGasPrice();
+    
+    // Use sendTransaction to have full control over gas limit
+    const hash = await sendTransactionAsync({
+      to: ESCROW_ADDRESS,
+      data,
       value: priceWei,
       gas: gasEstimate,
+      gasPrice: gasPrice,
     });
+    
     await waitForReceipt(hash);
     await fetchPayments();
   };
