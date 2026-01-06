@@ -5,7 +5,6 @@
 “Notre solution blockchain pour la supply chain permet de garantir la traçabilité, la transparence et la confiance entre tous les acteurs. Grâce à seulement 4 smart contracts clés, nous assurons la certification des produits, l’automatisation des paiements, la gestion des livraisons et le suivi de conformité, tout en réduisant les coûts administratifs et les risques de fraude.”
 
 ## 2. Business Model
-
 ### Proposition de valeur
 *   Transparence totale sur le cycle de vie des produits.
 *   Réduction des fraudes et contrefaçons.
