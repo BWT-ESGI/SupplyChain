@@ -157,35 +157,23 @@ export function useEscrow() {
       args: [BigInt(lotId)],
     });
     
-    // Estimate gas first, then cap it
-    let gasEstimate: bigint;
-    try {
-      gasEstimate = await publicClient.estimateGas({
-        account: address,
-        to: ESCROW_ADDRESS,
-        data,
-        value: priceWei,
-      });
-      
-      // Cap at 12M (well under Sepolia's 16.7M limit)
-      if (gasEstimate > BigInt(12_000_000)) {
-        gasEstimate = BigInt(12_000_000);
-      }
-    } catch {
-      // If estimation fails, use safe default
-      gasEstimate = BigInt(10_000_000);
-    }
+    // Force a very conservative gas limit (10M max)
+    const gasLimit = BigInt(10_000_000);
     
     // Get current gas price
     const gasPrice = await publicClient.getGasPrice();
     
-    // Use sendTransaction to have full control over gas limit
+    // Use sendTransaction with explicit gas limit
+    // MetaMask will show this in the UI and user can adjust if needed
     const hash = await sendTransactionAsync({
       to: ESCROW_ADDRESS,
       data,
       value: priceWei,
-      gas: gasEstimate,
+      gas: gasLimit,
       gasPrice: gasPrice,
+      // Add explicit maxFeePerGas to help MetaMask
+      maxFeePerGas: gasPrice * BigInt(2),
+      maxPriorityFeePerGas: gasPrice,
     });
     
     await waitForReceipt(hash);

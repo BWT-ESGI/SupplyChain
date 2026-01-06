@@ -2,18 +2,6 @@
 pragma solidity ^0.8.28;
 
 interface ISupplyChain {
-    function getLot(uint256 _lotId) external view returns (
-        uint256 id,
-        string memory title,
-        string memory description,
-        uint256 quantity,
-        string memory unit,
-        string memory origin,
-        uint256 price,
-        address creator,
-        uint256 createdAt,
-        bool exists
-    );
     function getLotPriceAndCreator(uint256 _lotId) external view returns (uint128 price, address creator, bool exists);
     function getLotStepsCount(uint256 _lotId) external view returns (uint256);
     function getStep(uint256 _lotId, uint256 _stepIndex) external view returns (
@@ -29,15 +17,15 @@ contract EscrowPayment {
     
     ISupplyChain public immutable supplyChain;
 
-    // Packed struct to save gas (8 slots -> 6 slots)
+    // Packed struct to save gas
     struct Payment {
-        uint256 lotId;        // slot 0
-        address buyer;        // slot 1 (20 bytes) + 12 bytes padding
-        address seller;       // slot 2 (20 bytes) + 12 bytes padding
-        uint128 amount;       // slot 3 (16 bytes)
-        uint64 createdAt;     // slot 3 (8 bytes) - packed with amount
-        uint64 releasedAt;    // slot 3 (8 bytes) - packed with amount
-        bool released;        // slot 4 (1 byte) + 7 bytes padding
+        uint256 lotId;
+        address buyer;
+        address seller;
+        uint128 amount;
+        uint64 createdAt;
+        uint64 releasedAt;
+        bool released;
     }
 
     mapping(uint256 => Payment) public payments;
@@ -56,24 +44,8 @@ contract EscrowPayment {
     function depositPayment(uint256 _lotId) external payable {
         require(payments[_lotId].amount == 0, "Payment already exists for this lot");
 
-        // Use optimized function if available, otherwise fallback to getLot
-        uint128 price;
-        address creator;
-        bool exists;
-        
-        // Try optimized function first (if exists in SupplyChain)
-        try supplyChain.getLotPriceAndCreator(_lotId) returns (uint128 p, address c, bool e) {
-            price = p;
-            creator = c;
-            exists = e;
-        } catch {
-            // Fallback to full getLot (more expensive but works)
-            (,,,,, , uint256 p, address c,, bool e) = supplyChain.getLot(_lotId);
-            require(p <= type(uint128).max, "Price too large");
-            price = uint128(p);
-            creator = c;
-            exists = e;
-        }
+        // Use optimized function directly (no try/catch to save gas)
+        (uint128 price, address creator, bool exists) = supplyChain.getLotPriceAndCreator(_lotId);
         
         require(exists, "Lot does not exist");
         require(creator != msg.sender, "Cannot buy your own lot");
@@ -144,11 +116,10 @@ contract EscrowPayment {
         uint256 stepsCount = supplyChain.getLotStepsCount(_lotId);
         if (stepsCount == 0) return false;
 
-        // Unchecked loop for gas optimization (stepsCount is bounded)
         unchecked {
             for (uint256 i = 0; i < stepsCount; i++) {
                 (,,,, uint8 status) = supplyChain.getStep(_lotId, i);
-                if (status != 1) return false; // 1 = Completed
+                if (status != 1) return false;
             }
         }
         return true;
@@ -173,10 +144,5 @@ contract EscrowPayment {
 
     function getContractBalance() external view returns (uint256) {
         return address(this).balance;
-    }
-
-    function getLotPrice(uint256 _lotId) external view returns (uint256) {
-        (,,,,,,uint256 price,,,) = supplyChain.getLot(_lotId);
-        return price;
     }
 }
