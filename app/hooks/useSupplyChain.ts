@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAccount, useWriteContract, usePublicClient } from "wagmi";
 import { type Address, parseEther } from "viem";
 
-export const CONTRACT_ADDRESS = "0x3D464790b395Ef1D4229eb7fbBE13EE581F242Ce";
+export const CONTRACT_ADDRESS = "0x893B34Da7aa5aa9fa3AA200d4eBf12c46817b5D3";
 
 const CONTRACT_ABI = [
   { inputs: [{ name: "_title", type: "string" }, { name: "_description", type: "string" }, { name: "_quantity", type: "uint256" }, { name: "_unit", type: "string" }, { name: "_origin", type: "string" }, { name: "_price", type: "uint256" }, { name: "_stepDescriptions", type: "string[]" }, { name: "_stepValidators", type: "address[][]" }], name: "createLot", outputs: [{ name: "", type: "uint256" }], stateMutability: "nonpayable", type: "function" },
@@ -59,8 +59,8 @@ export function useSupplyChain() {
   const waitForReceipt = async (hash: `0x${string}`) => {
     if (!publicClient) return;
     try {
-      await publicClient.waitForTransactionReceipt({ 
-        hash, 
+      await publicClient.waitForTransactionReceipt({
+        hash,
         timeout: 120_000, // 2 minutes timeout
         pollingInterval: 2_000, // Poll every 2 seconds
       });
