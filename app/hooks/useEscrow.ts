@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { useAccount, useWriteContract, usePublicClient } from "wagmi";
-import { formatEther } from "viem";
+import { useAccount, useWriteContract, useSendTransaction, usePublicClient } from "wagmi";
+import { formatEther, encodeFunctionData } from "viem";
 
-const ESCROW_ADDRESS = "0xa2E6556FD531CC83f6AFA410d5D5C2088229707D";
+const ESCROW_ADDRESS = "0x272C2bb7f4b4f75eC7ceC02477b84A6b9260Cb7D";
 
 const ESCROW_ABI = [
   { inputs: [{ name: "_lotId", type: "uint256" }], name: "depositPayment", outputs: [], stateMutability: "payable", type: "function" },
@@ -32,6 +32,7 @@ export type Payment = {
 export function useEscrow() {
   const { address } = useAccount();
   const { writeContractAsync } = useWriteContract();
+  const { sendTransactionAsync } = useSendTransaction();
   const publicClient = usePublicClient();
 
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -149,22 +150,24 @@ export function useEscrow() {
   const depositPayment = async (lotId: number, priceWei: bigint) => {
     if (!address || !publicClient) throw new Error("Not connected");
     
-    // Get gas price and calculate maxFeePerGas
-    const gasPrice = await publicClient.getGasPrice();
-    const maxFeePerGas = gasPrice * BigInt(2);
-    const maxPriorityFeePerGas = gasPrice / BigInt(10); // 10% of base fee
-    
-    // Use writeContract with explicit gas limit and EIP-1559 params
-    // This should force MetaMask to use our gas limit
-    const hash = await writeContractAsync({
-      address: ESCROW_ADDRESS,
+    // Encode function call
+    const data = encodeFunctionData({
       abi: ESCROW_ABI,
       functionName: "depositPayment",
       args: [BigInt(lotId)],
+    });
+    
+    // Get gas price
+    const gasPrice = await publicClient.getGasPrice();
+    
+    // Use sendTransaction with explicit gas limit
+    // This creates a raw transaction that MetaMask must respect
+    const hash = await sendTransactionAsync({
+      to: ESCROW_ADDRESS,
+      data,
       value: priceWei,
       gas: BigInt(8_000_000), // Force 8M limit (under 16.7M cap)
-      maxFeePerGas: maxFeePerGas,
-      maxPriorityFeePerGas: maxPriorityFeePerGas,
+      gasPrice: gasPrice,
     });
     
     await waitForReceipt(hash);
