@@ -168,7 +168,7 @@ export function LotList({ lots, account, onSelect, onCreate, loading }: LotListP
                 <div className="flex items-end justify-between pt-3 border-t border-stone-100">
                   <div>
                     <div className="text-xs text-stone-400">Prix</div>
-                    <div className="text-lg font-bold text-teal-600">{lot.price} ETH</div>
+                    <div className="text-lg font-bold text-teal-600">{lot.price} SepoliaETH</div>
                   </div>
                   {!done && progress.completed > 0 && (
                     <div className="text-right">

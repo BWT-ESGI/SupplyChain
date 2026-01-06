@@ -145,7 +145,7 @@ export function LotDetail({ lot, onBack, onValidate, account }: LotDetailProps) 
             {/* Price display */}
             <div className="mt-4 p-3 bg-teal-50 rounded-lg inline-block">
               <div className="text-xs text-teal-600 font-medium">Prix fixé par le vendeur</div>
-              <div className="text-2xl font-bold text-teal-700">{lot.price} ETH</div>
+              <div className="text-2xl font-bold text-teal-700">{lot.price} SepoliaETH</div>
             </div>
           </div>
           
@@ -202,7 +202,7 @@ export function LotDetail({ lot, onBack, onValidate, account }: LotDetailProps) 
                   </>
                 ) : (
                   <>
-                    <span>Acheter pour {lot.price} ETH</span>
+                    <span>Acheter pour {lot.price} SepoliaETH</span>
                   </>
                 )}
               </button>
@@ -237,7 +237,7 @@ export function LotDetail({ lot, onBack, onValidate, account }: LotDetailProps) 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-stone-50 rounded-lg">
             <div>
               <div className="text-xs text-stone-400">Montant</div>
-              <div className="text-lg font-semibold text-stone-900">{payment.amount} ETH</div>
+              <div className="text-lg font-semibold text-stone-900">{payment.amount} SepoliaETH</div>
             </div>
             <div>
               <div className="text-xs text-stone-400">Acheteur</div>
@@ -302,7 +302,7 @@ export function LotDetail({ lot, onBack, onValidate, account }: LotDetailProps) 
             <div>
               <p className="font-medium text-green-800">Paiement transféré</p>
               <p className="text-sm text-green-600">
-                {payment.amount} ETH envoyé le <FormattedDate timestamp={payment.releasedAt} mode="full" />
+                {payment.amount} SepoliaETH envoyé le <FormattedDate timestamp={payment.releasedAt} mode="full" />
               </p>
             </div>
           </div>

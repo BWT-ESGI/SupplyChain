@@ -144,14 +144,14 @@ export function CreateLotForm({ onCreate, onCancel }: CreateLotFormProps) {
             </div>
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1.5">
-                Prix (ETH) *
+                Prix (SepoliaETH) *
               </label>
               <input
                 type="number"
                 value={price}
                 onChange={e => setPrice(e.target.value)}
-                placeholder="0.01"
-                step="0.001"
+                placeholder="0.00001"
+                step="0.00001"
                 min="0"
                 className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
                 required

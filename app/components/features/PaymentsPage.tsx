@@ -62,12 +62,12 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         <div className="bg-white border border-stone-200 rounded-xl p-5">
           <div className="text-sm text-stone-500 mb-1">Total dépensé</div>
-          <div className="text-xl font-semibold text-stone-900">{parseFloat(userTotalSpent).toFixed(4)} ETH</div>
+          <div className="text-xl font-semibold text-stone-900">{parseFloat(userTotalSpent).toFixed(6)} SepoliaETH</div>
           <div className="text-xs text-stone-400 mt-1">{myPaymentsAsBuyer.length} achat(s)</div>
         </div>
         <div className="bg-white border border-stone-200 rounded-xl p-5">
           <div className="text-sm text-stone-500 mb-1">Total reçu</div>
-          <div className="text-xl font-semibold text-green-600">{parseFloat(userTotalReceived).toFixed(4)} ETH</div>
+          <div className="text-xl font-semibold text-green-600">{parseFloat(userTotalReceived).toFixed(6)} SepoliaETH</div>
           <div className="text-xs text-stone-400 mt-1">{myPaymentsAsSeller.filter(p => p.released).length} vente(s)</div>
         </div>
         <div className="bg-white border border-stone-200 rounded-xl p-5">
@@ -77,7 +77,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
         </div>
         <div className="bg-white border border-stone-200 rounded-xl p-5">
           <div className="text-sm text-stone-500 mb-1">Solde Escrow</div>
-          <div className="text-xl font-semibold text-stone-900">{parseFloat(contractBalance).toFixed(4)} ETH</div>
+          <div className="text-xl font-semibold text-stone-900">{parseFloat(contractBalance).toFixed(6)} SepoliaETH</div>
           <div className="text-xs text-stone-400 mt-1">Total contrat</div>
         </div>
       </div>
@@ -109,7 +109,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                     <td className="px-4 py-3 font-mono text-xs text-stone-400">
                       {p.seller.slice(0, 6)}...{p.seller.slice(-4)}
                     </td>
-                    <td className="px-4 py-3 font-medium text-stone-900">{p.amount} ETH</td>
+                    <td className="px-4 py-3 font-medium text-stone-900">{p.amount} SepoliaETH</td>
                     <td className="px-4 py-3">
                       {p.released ? (
                         <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded">Terminé</span>
@@ -155,7 +155,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                     <td className="px-4 py-3 font-mono text-xs text-stone-400">
                       {p.buyer.slice(0, 6)}...{p.buyer.slice(-4)}
                     </td>
-                    <td className="px-4 py-3 font-medium text-stone-900">{p.amount} ETH</td>
+                    <td className="px-4 py-3 font-medium text-stone-900">{p.amount} SepoliaETH</td>
                     <td className="px-4 py-3">
                       {p.released ? (
                         <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded">Reçu ✓</span>
@@ -215,7 +215,7 @@ export function PaymentsPage({ onBack }: PaymentsPageProps) {
                       <td className="px-4 py-3 font-mono text-xs text-stone-400 hidden sm:table-cell">
                         {p.seller.slice(0, 6)}...{p.seller.slice(-4)}
                       </td>
-                      <td className="px-4 py-3 font-medium text-stone-900">{p.amount} ETH</td>
+                      <td className="px-4 py-3 font-medium text-stone-900">{p.amount} SepoliaETH</td>
                       <td className="px-4 py-3">
                         {p.released ? (
                           <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded">Libéré</span>

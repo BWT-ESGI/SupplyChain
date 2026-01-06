@@ -40,6 +40,22 @@ export function useEscrow() {
   const [userTotalSpent, setUserTotalSpent] = useState("0");
   const [loading, setLoading] = useState(false);
 
+  // Helper to wait for receipt with timeout
+  const waitForReceipt = async (hash: `0x${string}`) => {
+    if (!publicClient) return;
+    try {
+      await publicClient.waitForTransactionReceipt({ 
+        hash, 
+        timeout: 120_000, // 2 minutes timeout
+        pollingInterval: 2_000, // Poll every 2 seconds
+      });
+    } catch (e) {
+      console.warn("Transaction may still be pending:", e);
+      // Wait a bit and refresh anyway
+      await new Promise(r => setTimeout(r, 5000));
+    }
+  };
+
   const fetchPayments = useCallback(async () => {
     if (!publicClient) return;
     setLoading(true);
@@ -139,7 +155,7 @@ export function useEscrow() {
       args: [BigInt(lotId)],
       value: priceWei,
     });
-    await publicClient?.waitForTransactionReceipt({ hash });
+    await waitForReceipt(hash);
     await fetchPayments();
   };
 
@@ -151,7 +167,7 @@ export function useEscrow() {
       functionName: "releasePayment",
       args: [BigInt(lotId)],
     });
-    await publicClient?.waitForTransactionReceipt({ hash });
+    await waitForReceipt(hash);
     await fetchPayments();
   };
 
@@ -163,7 +179,7 @@ export function useEscrow() {
       functionName: "refundPayment",
       args: [BigInt(lotId)],
     });
-    await publicClient?.waitForTransactionReceipt({ hash });
+    await waitForReceipt(hash);
     await fetchPayments();
   };
 
