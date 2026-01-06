@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAccount, useWriteContract, usePublicClient } from "wagmi";
-import { formatEther } from "viem";
+import { formatEther, encodeFunctionData } from "viem";
 
-const ESCROW_ADDRESS = "0xAeAac2878c758eA28840d258B10f1E9546c903Df";
+const ESCROW_ADDRESS = "0x6167C20988dc09A2859a2B84c476246DAc7E88F0";
 
 const ESCROW_ABI = [
   { inputs: [{ name: "_lotId", type: "uint256" }], name: "depositPayment", outputs: [], stateMutability: "payable", type: "function" },
@@ -147,14 +147,40 @@ export function useEscrow() {
   }, [publicClient]);
 
   const depositPayment = async (lotId: number, priceWei: bigint) => {
-    if (!address) throw new Error("Not connected");
+    if (!address || !publicClient) throw new Error("Not connected");
+    
+    // Estimate gas first, then cap it
+    let gasEstimate: bigint;
+    try {
+      const data = encodeFunctionData({
+        abi: ESCROW_ABI,
+        functionName: "depositPayment",
+        args: [BigInt(lotId)],
+      });
+      
+      gasEstimate = await publicClient.estimateGas({
+        account: address,
+        to: ESCROW_ADDRESS,
+        data,
+        value: priceWei,
+      });
+      
+      // Cap at 15M (under Sepolia's 16.7M limit)
+      if (gasEstimate > BigInt(15_000_000)) {
+        gasEstimate = BigInt(15_000_000);
+      }
+    } catch {
+      // If estimation fails, use safe default
+      gasEstimate = BigInt(10_000_000);
+    }
+    
     const hash = await writeContractAsync({
       address: ESCROW_ADDRESS,
       abi: ESCROW_ABI,
       functionName: "depositPayment",
       args: [BigInt(lotId)],
       value: priceWei,
-      gas: BigInt(15_000_000), // Limit gas to avoid Sepolia cap (16.7M)
+      gas: gasEstimate,
     });
     await waitForReceipt(hash);
     await fetchPayments();
