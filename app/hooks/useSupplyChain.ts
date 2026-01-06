@@ -2,13 +2,14 @@ import { useState, useEffect, useCallback } from "react";
 import { useAccount, useWriteContract, usePublicClient } from "wagmi";
 import { type Address, parseEther } from "viem";
 
-const CONTRACT_ADDRESS = "0x893B34Da7aa5aa9fa3AA200d4eBf12c46817b5D3";
+const CONTRACT_ADDRESS = "0x79F6374b4ECca024494533Df498e81670436ff30";
 
 const CONTRACT_ABI = [
   { inputs: [{ name: "_title", type: "string" }, { name: "_description", type: "string" }, { name: "_quantity", type: "uint256" }, { name: "_unit", type: "string" }, { name: "_origin", type: "string" }, { name: "_price", type: "uint256" }, { name: "_stepDescriptions", type: "string[]" }, { name: "_stepValidators", type: "address[][]" }], name: "createLot", outputs: [{ name: "", type: "uint256" }], stateMutability: "nonpayable", type: "function" },
   { inputs: [{ name: "_lotId", type: "uint256" }, { name: "_stepIndex", type: "uint256" }], name: "validateStep", outputs: [], stateMutability: "nonpayable", type: "function" },
   { inputs: [], name: "nextLotId", outputs: [{ name: "", type: "uint256" }], stateMutability: "view", type: "function" },
-  { inputs: [{ name: "_lotId", type: "uint256" }], name: "getLot", outputs: [{ components: [{ name: "id", type: "uint256" }, { name: "title", type: "string" }, { name: "description", type: "string" }, { name: "quantity", type: "uint256" }, { name: "unit", type: "string" }, { name: "origin", type: "string" }, { name: "price", type: "uint256" }, { name: "creator", type: "address" }, { name: "createdAt", type: "uint256" }, { name: "exists", type: "bool" }], name: "", type: "tuple" }], stateMutability: "view", type: "function" },
+  { inputs: [{ name: "_lotId", type: "uint256" }], name: "getLot", outputs: [{ components: [{ name: "id", type: "uint256" }, { name: "creator", type: "address" }, { name: "createdAt", type: "uint64" }, { name: "quantity", type: "uint128" }, { name: "price", type: "uint128" }, { name: "exists", type: "bool" }, { name: "title", type: "string" }, { name: "description", type: "string" }, { name: "unit", type: "string" }, { name: "origin", type: "string" }], name: "", type: "tuple" }], stateMutability: "view", type: "function" },
+  { inputs: [{ name: "_lotId", type: "uint256" }], name: "getLotPriceAndCreator", outputs: [{ name: "price", type: "uint128" }, { name: "creator", type: "address" }, { name: "exists", type: "bool" }], stateMutability: "view", type: "function" },
   { inputs: [{ name: "_lotId", type: "uint256" }], name: "getLotStepsCount", outputs: [{ name: "", type: "uint256" }], stateMutability: "view", type: "function" },
   { inputs: [{ name: "_lotId", type: "uint256" }, { name: "_stepIndex", type: "uint256" }], name: "getStep", outputs: [{ name: "description", type: "string" }, { name: "validators", type: "address[]" }, { name: "validatedBy", type: "address" }, { name: "validatedAt", type: "uint256" }, { name: "status", type: "uint8" }], stateMutability: "view", type: "function" }
 ] as const;
@@ -91,7 +92,7 @@ export function useSupplyChain() {
           abi: CONTRACT_ABI,
           functionName: "getLot",
           args: [lotId],
-        })) as { id: bigint; title: string; description: string; quantity: bigint; unit: string; origin: string; price: bigint; creator: string; createdAt: bigint; exists: boolean };
+        })) as { id: bigint; creator: string; createdAt: bigint; quantity: bigint; price: bigint; exists: boolean; title: string; description: string; unit: string; origin: string };
 
         if (!lotData.exists) continue;
 

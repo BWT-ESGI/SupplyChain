@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { useAccount, useWriteContract, usePublicClient } from "wagmi";
-import { formatEther } from "viem";
+import { useAccount, useSendTransaction, useWriteContract, usePublicClient } from "wagmi";
+import { formatEther, encodeFunctionData } from "viem";
 
-const ESCROW_ADDRESS = "0x520c0552A6d81032aAe7a09577F06a80B0dbbE83";
+const ESCROW_ADDRESS = "0xcf0cBCf0Ba6219a77a154991C351b14A1388C168";
 
 const ESCROW_ABI = [
   { inputs: [{ name: "_lotId", type: "uint256" }], name: "depositPayment", outputs: [], stateMutability: "payable", type: "function" },
@@ -31,6 +31,7 @@ export type Payment = {
 
 export function useEscrow() {
   const { address } = useAccount();
+  const { sendTransactionAsync } = useSendTransaction();
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
 
@@ -147,14 +148,34 @@ export function useEscrow() {
   }, [publicClient]);
 
   const depositPayment = async (lotId: number, priceWei: bigint) => {
-    if (!address) throw new Error("Not connected");
-    const hash = await writeContractAsync({
-      address: ESCROW_ADDRESS,
+    if (!address || !publicClient) throw new Error("Not connected");
+    
+    // Encode function data
+    const data = encodeFunctionData({
       abi: ESCROW_ABI,
       functionName: "depositPayment",
       args: [BigInt(lotId)],
-      value: priceWei,
     });
+    
+    // Force a very conservative gas limit (10M max)
+    const gasLimit = BigInt(10_000_000);
+    
+    // Get current gas price
+    const gasPrice = await publicClient.getGasPrice();
+    
+    // Use sendTransaction with explicit gas limit
+    // MetaMask will show this in the UI and user can adjust if needed
+    const hash = await sendTransactionAsync({
+      to: ESCROW_ADDRESS,
+      data,
+      value: priceWei,
+      gas: gasLimit,
+      gasPrice: gasPrice,
+      // Add explicit maxFeePerGas to help MetaMask
+      maxFeePerGas: gasPrice * BigInt(2),
+      maxPriorityFeePerGas: gasPrice,
+    });
+    
     await waitForReceipt(hash);
     await fetchPayments();
   };

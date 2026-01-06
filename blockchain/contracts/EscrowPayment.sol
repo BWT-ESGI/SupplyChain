@@ -2,18 +2,7 @@
 pragma solidity ^0.8.28;
 
 interface ISupplyChain {
-    function getLot(uint256 _lotId) external view returns (
-        uint256 id,
-        string memory title,
-        string memory description,
-        uint256 quantity,
-        string memory unit,
-        string memory origin,
-        uint256 price,
-        address creator,
-        uint256 createdAt,
-        bool exists
-    );
+    function getLotPriceAndCreator(uint256 _lotId) external view returns (uint128 price, address creator, bool exists);
     function getLotStepsCount(uint256 _lotId) external view returns (uint256);
     function getStep(uint256 _lotId, uint256 _stepIndex) external view returns (
         string memory description,
@@ -26,15 +15,16 @@ interface ISupplyChain {
 
 contract EscrowPayment {
     
-    ISupplyChain public supplyChain;
+    ISupplyChain public immutable supplyChain;
 
+    // Packed struct to save gas
     struct Payment {
         uint256 lotId;
         address buyer;
         address seller;
-        uint256 amount;
-        uint256 createdAt;
-        uint256 releasedAt;
+        uint128 amount;
+        uint64 createdAt;
+        uint64 releasedAt;
         bool released;
     }
 
@@ -54,7 +44,9 @@ contract EscrowPayment {
     function depositPayment(uint256 _lotId) external payable {
         require(payments[_lotId].amount == 0, "Payment already exists for this lot");
 
-        (,,,,, , uint256 price, address creator,, bool exists) = supplyChain.getLot(_lotId);
+        // Use optimized function directly (no try/catch to save gas)
+        (uint128 price, address creator, bool exists) = supplyChain.getLotPriceAndCreator(_lotId);
+        
         require(exists, "Lot does not exist");
         require(creator != msg.sender, "Cannot buy your own lot");
         require(price > 0, "Lot has no price set");
@@ -64,14 +56,16 @@ contract EscrowPayment {
             lotId: _lotId,
             buyer: msg.sender,
             seller: creator,
-            amount: msg.value,
-            createdAt: block.timestamp,
+            amount: uint128(msg.value),
+            createdAt: uint64(block.timestamp),
             releasedAt: 0,
             released: false
         });
 
         paymentLotIds.push(_lotId);
-        totalSpent[msg.sender] += msg.value;
+        unchecked {
+            totalSpent[msg.sender] += msg.value;
+        }
 
         emit PaymentDeposited(_lotId, msg.sender, creator, msg.value);
     }
@@ -83,13 +77,17 @@ contract EscrowPayment {
         require(_isLotCompleted(_lotId), "Lot not fully validated");
 
         payment.released = true;
-        payment.releasedAt = block.timestamp;
-        totalReceived[payment.seller] += payment.amount;
+        payment.releasedAt = uint64(block.timestamp);
+        
+        uint256 amount = payment.amount;
+        unchecked {
+            totalReceived[payment.seller] += amount;
+        }
 
-        (bool success, ) = payable(payment.seller).call{value: payment.amount}("");
+        (bool success, ) = payable(payment.seller).call{value: amount}("");
         require(success, "Transfer failed");
 
-        emit PaymentReleased(_lotId, payment.seller, payment.amount);
+        emit PaymentReleased(_lotId, payment.seller, amount);
     }
 
     function refundPayment(uint256 _lotId) external {
@@ -102,8 +100,11 @@ contract EscrowPayment {
         uint256 amount = payment.amount;
         payment.amount = 0;
         payment.released = true;
-        payment.releasedAt = block.timestamp;
-        totalSpent[msg.sender] -= amount;
+        payment.releasedAt = uint64(block.timestamp);
+        
+        unchecked {
+            totalSpent[msg.sender] -= amount;
+        }
 
         (bool success, ) = payable(msg.sender).call{value: amount}("");
         require(success, "Refund failed");
@@ -115,9 +116,11 @@ contract EscrowPayment {
         uint256 stepsCount = supplyChain.getLotStepsCount(_lotId);
         if (stepsCount == 0) return false;
 
-        for (uint256 i = 0; i < stepsCount; i++) {
-            (,,,, uint8 status) = supplyChain.getStep(_lotId, i);
-            if (status != 1) return false;
+        unchecked {
+            for (uint256 i = 0; i < stepsCount; i++) {
+                (,,,, uint8 status) = supplyChain.getStep(_lotId, i);
+                if (status != 1) return false;
+            }
         }
         return true;
     }
@@ -141,10 +144,5 @@ contract EscrowPayment {
 
     function getContractBalance() external view returns (uint256) {
         return address(this).balance;
-    }
-
-    function getLotPrice(uint256 _lotId) external view returns (uint256) {
-        (,,,,,,uint256 price,,,) = supplyChain.getLot(_lotId);
-        return price;
     }
 }
