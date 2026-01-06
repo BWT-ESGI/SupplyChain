@@ -1,21 +1,20 @@
 import { useState, useEffect, useCallback } from "react";
-import { useAccount, useWriteContract, useSendTransaction, usePublicClient } from "wagmi";
-import { formatEther, encodeFunctionData } from "viem";
+import { useAccount, useWriteContract, usePublicClient } from "wagmi";
+import { formatEther } from "viem";
 
-const ESCROW_ADDRESS = "0x272C2bb7f4b4f75eC7ceC02477b84A6b9260Cb7D";
+const ESCROW_ADDRESS = "0x69c9E2A3F7a8D179394fb8582168D7e8AFAC580A";
 
 const ESCROW_ABI = [
   { inputs: [{ name: "_lotId", type: "uint256" }], name: "depositPayment", outputs: [], stateMutability: "payable", type: "function" },
   { inputs: [{ name: "_lotId", type: "uint256" }], name: "releasePayment", outputs: [], stateMutability: "nonpayable", type: "function" },
   { inputs: [{ name: "_lotId", type: "uint256" }], name: "refundPayment", outputs: [], stateMutability: "nonpayable", type: "function" },
-  { inputs: [{ name: "_lotId", type: "uint256" }], name: "getPayment", outputs: [{ components: [{ name: "lotId", type: "uint256" }, { name: "buyer", type: "address" }, { name: "seller", type: "address" }, { name: "amount", type: "uint256" }, { name: "createdAt", type: "uint256" }, { name: "releasedAt", type: "uint256" }, { name: "released", type: "bool" }], name: "", type: "tuple" }], stateMutability: "view", type: "function" },
+  { inputs: [{ name: "_lotId", type: "uint256" }], name: "getPayment", outputs: [{ components: [{ name: "lotId", type: "uint256" }, { name: "buyer", type: "address" }, { name: "seller", type: "address" }, { name: "amount", type: "uint128" }, { name: "createdAt", type: "uint64" }, { name: "releasedAt", type: "uint64" }, { name: "released", type: "bool" }], name: "", type: "tuple" }], stateMutability: "view", type: "function" },
   { inputs: [], name: "getPaymentsCount", outputs: [{ name: "", type: "uint256" }], stateMutability: "view", type: "function" },
-  { inputs: [{ name: "_index", type: "uint256" }], name: "getPaymentByIndex", outputs: [{ components: [{ name: "lotId", type: "uint256" }, { name: "buyer", type: "address" }, { name: "seller", type: "address" }, { name: "amount", type: "uint256" }, { name: "createdAt", type: "uint256" }, { name: "releasedAt", type: "uint256" }, { name: "released", type: "bool" }], name: "", type: "tuple" }], stateMutability: "view", type: "function" },
+  { inputs: [{ name: "_index", type: "uint256" }], name: "getPaymentByIndex", outputs: [{ components: [{ name: "lotId", type: "uint256" }, { name: "buyer", type: "address" }, { name: "seller", type: "address" }, { name: "amount", type: "uint128" }, { name: "createdAt", type: "uint64" }, { name: "releasedAt", type: "uint64" }, { name: "released", type: "bool" }], name: "", type: "tuple" }], stateMutability: "view", type: "function" },
   { inputs: [{ name: "_lotId", type: "uint256" }], name: "isLotCompleted", outputs: [{ name: "", type: "bool" }], stateMutability: "view", type: "function" },
   { inputs: [], name: "getContractBalance", outputs: [{ name: "", type: "uint256" }], stateMutability: "view", type: "function" },
   { inputs: [{ name: "", type: "address" }], name: "totalReceived", outputs: [{ name: "", type: "uint256" }], stateMutability: "view", type: "function" },
   { inputs: [{ name: "", type: "address" }], name: "totalSpent", outputs: [{ name: "", type: "uint256" }], stateMutability: "view", type: "function" },
-  { inputs: [{ name: "_lotId", type: "uint256" }], name: "getLotPrice", outputs: [{ name: "", type: "uint256" }], stateMutability: "view", type: "function" },
 ] as const;
 
 export type Payment = {
@@ -32,7 +31,6 @@ export type Payment = {
 export function useEscrow() {
   const { address } = useAccount();
   const { writeContractAsync } = useWriteContract();
-  const { sendTransactionAsync } = useSendTransaction();
   const publicClient = usePublicClient();
 
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -150,24 +148,16 @@ export function useEscrow() {
   const depositPayment = async (lotId: number, priceWei: bigint) => {
     if (!address || !publicClient) throw new Error("Not connected");
     
-    // Encode function call
-    const data = encodeFunctionData({
+    // Use writeContractAsync directly - MetaMask will see the function from the ABI
+    // If gas estimation fails, it will show an error but at least the function will be visible
+    const hash = await writeContractAsync({
+      address: ESCROW_ADDRESS,
       abi: ESCROW_ABI,
       functionName: "depositPayment",
       args: [BigInt(lotId)],
-    });
-    
-    // Get gas price
-    const gasPrice = await publicClient.getGasPrice();
-    
-    // Use sendTransaction with explicit gas limit
-    // This creates a raw transaction that MetaMask must respect
-    const hash = await sendTransactionAsync({
-      to: ESCROW_ADDRESS,
-      data,
       value: priceWei,
-      gas: BigInt(8_000_000), // Force 8M limit (under 16.7M cap)
-      gasPrice: gasPrice,
+      // Don't set gas limit here - let MetaMask estimate first
+      // If estimation fails due to high gas, we'll handle it in the error
     });
     
     await waitForReceipt(hash);
